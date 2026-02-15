@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import axios from 'axios';
 import dotenv from 'dotenv';
 import http from 'http';
+import { commands } from './commands.js';
 
 dotenv.config();
 
@@ -101,6 +102,22 @@ client.on('messageCreate', async (message) => {
   // Проверяем, упомянут ли бот или есть префикс
   const isMentioned = message.mentions.has(client.user);
   const hasPrefix = message.content.startsWith(BOT_PREFIX);
+
+  // Обработка команд
+  if (hasPrefix) {
+    const args = message.content.slice(BOT_PREFIX.length).trim().split(/ +/);
+    const commandName = args.shift().toLowerCase();
+    
+    if (commands[commandName]) {
+      try {
+        await commands[commandName].execute(message, conversationHistory, args);
+      } catch (error) {
+        console.error('Ошибка при выполнении команды:', error);
+        message.reply('❌ Произошла ошибка при выполнении команды!');
+      }
+      return;
+    }
+  }
 
   if (!isMentioned && !hasPrefix) return;
 
