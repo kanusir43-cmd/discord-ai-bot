@@ -52,34 +52,48 @@ async function getAIResponse(userMessage, channelId) {
       history.shift();
     }
 
-    const response = await axios.post(
-      GROQ_API_URL,
-      {
-        model: 'mixtral-8x7b-32768', // Надежная бесплатная модель Groq
-        messages: [
-          {
-            role: 'system',
-            content: 'Ты ИИ-помощник и опытный программист в Discord по имени Колин ИИ. Ты работаешь на основе искусственного интеллекта. Отвечай ТОЛЬКО на русском языке. Ты отлично разбираешься в программировании на всех языках (JavaScript, Python, C++, Java и др.). Помогаешь писать код, находить ошибки, объясняешь концепции. Когда пишешь код, используй markdown форматирование с ```язык. Будь дружелюбным и понятно объясняй сложные вещи.',
-          },
-          ...history,
-        ],
-        max_tokens: 1000,
-        temperature: 0.7,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    const aiMessage = response.data.choices[0].message.content;
+    // Пробуем разные модели Groq
+    const models = ['mixtral-8x7b-32768', 'llama3-8b-8192', 'gemma-7b-it'];
     
-    // Добавляем ответ ИИ в историю
-    history.push({ role: 'assistant', content: aiMessage });
+    for (const model of models) {
+      try {
+        const response = await axios.post(
+          GROQ_API_URL,
+          {
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: 'Ты ИИ-помощник и опытный программист в Discord по имени Колин ИИ. Ты работаешь на основе искусственного интеллекта. Отвечай ТОЛЬКО на русском языке. Ты отлично разбираешься в программировании на всех языках (JavaScript, Python, C++, Java и др.). Помогаешь писать код, находить ошибки, объясняешь концепции. Когда пишешь код, используй markdown форматирование с ```язык. Будь дружелюбным и понятно объясняй сложные вещи.',
+              },
+              ...history,
+            ],
+            max_tokens: 1000,
+            temperature: 0.7,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
-    return aiMessage;
+        const aiMessage = response.data.choices[0].message.content;
+        
+        // Добавляем ответ ИИ в историю
+        history.push({ role: 'assistant', content: aiMessage });
+
+        return aiMessage;
+      } catch (modelError) {
+        console.log(`Модель ${model} не работает, пробуем следующую...`);
+        continue;
+      }
+    }
+    
+    // Если все модели не работают, выбрасываем ошибку
+    throw new Error('Все модели Groq недоступны');
+    
   } catch (error) {
     console.error('Ошибка при обращении к Groq API:', error.response?.data || error.message);
     
@@ -97,7 +111,9 @@ async function getAIResponse(userMessage, channelId) {
       'Привет! Я Колин ИИ, временно работаю в базовом режиме.',
       'Здорово! Чем могу помочь? (Пока работаю без AI)',
       'Привет! Я здесь, но пока в упрощенном режиме.',
-      'Йо! Колин на связи!'
+      'Йо! Колин на связи!',
+      'Привет! API временно недоступен, но я тут!',
+      'Хей! Работаю в offline режиме, но готов помочь!'
     ];
     
     return basicResponses[Math.floor(Math.random() * basicResponses.length)];
