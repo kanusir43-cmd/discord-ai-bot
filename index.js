@@ -81,15 +81,15 @@ async function getAIResponse(userMessage, channelId) {
 
     return aiMessage;
   } catch (error) {
-    console.error('Ошибка при обращении к Groq API:', error.response?.data || error.message);
+    console.error('Ошибка при обращении к OpenRouter API:', error.response?.data || error.message);
     
-    // Обработка ошибок Groq API
+    // Обработка ошибок OpenRouter API
     if (error.response?.status === 401) {
-      return 'Ошибка авторизации Groq API. Проверь API ключ.';
+      return 'Ошибка авторизации OpenRouter API. Проверь API ключ.';
     } else if (error.response?.status === 429) {
-      return 'Превышен лимит запросов Groq. Попробуй позже.';
+      return 'Превышен лимит запросов OpenRouter. Попробуй позже.';
     } else if (error.response?.status === 400) {
-      return 'Неверный запрос к Groq API.';
+      return 'Неверный запрос к OpenRouter API.';
     }
     
     // Временные базовые ответы
