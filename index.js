@@ -55,7 +55,7 @@ async function getAIResponse(userMessage, channelId) {
     const response = await axios.post(
       GROQ_API_URL,
       {
-        model: 'llama-3.1-70b-versatile', // Быстрая бесплатная модель Groq
+        model: 'mixtral-8x7b-32768', // Надежная бесплатная модель Groq
         messages: [
           {
             role: 'system',
