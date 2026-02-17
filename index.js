@@ -30,7 +30,7 @@ server.listen(PORT, () => {
   console.log(`Health check server running on port ${PORT}`);
 });
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const BOT_PREFIX = '!'; // Префикс для команд (можно изменить)
 
 // История сообщений для контекста (последние 20 сообщений на канал для лучшего контекста)
@@ -53,9 +53,9 @@ async function getAIResponse(userMessage, channelId) {
     }
 
     const response = await axios.post(
-      OPENROUTER_API_URL,
+      GROQ_API_URL,
       {
-        model: 'meta-llama/llama-3.2-3b-instruct:free', // Бесплатная модель OpenRouter
+        model: 'llama-3.1-70b-versatile', // Быстрая бесплатная модель Groq
         messages: [
           {
             role: 'system',
@@ -68,7 +68,7 @@ async function getAIResponse(userMessage, channelId) {
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
           'Content-Type': 'application/json',
         },
       }
@@ -81,15 +81,15 @@ async function getAIResponse(userMessage, channelId) {
 
     return aiMessage;
   } catch (error) {
-    console.error('Ошибка при обращении к OpenRouter API:', error.response?.data || error.message);
+    console.error('Ошибка при обращении к Groq API:', error.response?.data || error.message);
     
-    // Обработка ошибок OpenRouter API
+    // Обработка ошибок Groq API
     if (error.response?.status === 401) {
-      return 'Ошибка авторизации OpenRouter API. Проверь API ключ.';
+      return 'Ошибка авторизации Groq API. Проверь API ключ.';
     } else if (error.response?.status === 429) {
-      return 'Превышен лимит запросов OpenRouter. Попробуй позже.';
+      return 'Превышен лимит запросов Groq. Попробуй позже.';
     } else if (error.response?.status === 400) {
-      return 'Неверный запрос к OpenRouter API.';
+      return 'Неверный запрос к Groq API.';
     }
     
     // Временные базовые ответы
