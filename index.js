@@ -30,7 +30,7 @@ server.listen(PORT, () => {
   console.log(`Health check server running on port ${PORT}`);
 });
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const BOT_PREFIX = '!'; // Префикс для команд (можно изменить)
 
 // История сообщений для контекста (последние 20 сообщений на канал для лучшего контекста)
@@ -53,9 +53,9 @@ async function getAIResponse(userMessage, channelId) {
     }
 
     const response = await axios.post(
-      GROQ_API_URL,
+      OPENROUTER_API_URL,
       {
-        model: 'llama-3.1-70b-versatile', // Быстрая модель Groq
+        model: 'meta-llama/llama-3.2-3b-instruct:free', // Бесплатная модель OpenRouter
         messages: [
           {
             role: 'system',
@@ -68,7 +68,7 @@ async function getAIResponse(userMessage, channelId) {
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
         },
       }
