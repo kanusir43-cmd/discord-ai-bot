@@ -30,7 +30,7 @@ server.listen(PORT, () => {
   console.log(`Health check server running on port ${PORT}`);
 });
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const BOT_PREFIX = '!'; // Префикс для команд (можно изменить)
 
 // История сообщений для контекста (последние 20 сообщений на канал для лучшего контекста)
@@ -53,9 +53,9 @@ async function getAIResponse(userMessage, channelId) {
     }
 
     const response = await axios.post(
-      OPENROUTER_API_URL,
+      GROQ_API_URL,
       {
-        model: 'openai/gpt-3.5-turbo', // Более стабильная модель с хорошим русским
+        model: 'llama-3.1-70b-versatile', // Быстрая модель Groq
         messages: [
           {
             role: 'system',
@@ -63,11 +63,12 @@ async function getAIResponse(userMessage, channelId) {
           },
           ...history,
         ],
-        max_tokens: 1500,
+        max_tokens: 1000,
+        temperature: 0.7,
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
           'Content-Type': 'application/json',
         },
       }
@@ -80,8 +81,26 @@ async function getAIResponse(userMessage, channelId) {
 
     return aiMessage;
   } catch (error) {
-    console.error('Ошибка при обращении к OpenRouter:', error.response?.data || error.message);
-    return 'Извини, произошла ошибка при обработке твоего запроса. Проверь API ключ и попробуй снова.';
+    console.error('Ошибка при обращении к Groq API:', error.response?.data || error.message);
+    
+    // Обработка ошибок Groq API
+    if (error.response?.status === 401) {
+      return 'Ошибка авторизации Groq API. Проверь API ключ.';
+    } else if (error.response?.status === 429) {
+      return 'Превышен лимит запросов Groq. Попробуй позже.';
+    } else if (error.response?.status === 400) {
+      return 'Неверный запрос к Groq API.';
+    }
+    
+    // Временные базовые ответы
+    const basicResponses = [
+      'Привет! Я Колин ИИ, временно работаю в базовом режиме.',
+      'Здорово! Чем могу помочь? (Пока работаю без AI)',
+      'Привет! Я здесь, но пока в упрощенном режиме.',
+      'Йо! Колин на связи!'
+    ];
+    
+    return basicResponses[Math.floor(Math.random() * basicResponses.length)];
   }
 }
 
@@ -96,6 +115,30 @@ client.on('messageCreate', async (message) => {
 
   // Если указан конкретный канал, работаем только в нем
   if (process.env.CHANNEL_ID && message.channel.id !== process.env.CHANNEL_ID) {
+    return;
+  }
+
+  // Проверяем на ключевые слова новичка
+  const messageContent = message.content.toLowerCase();
+  const newbieKeywords = [
+    'я новичок', 'новичек', 'новенький', 'только зашел', 'только присоединился',
+    'первый раз здесь', 'что тут делать', 'как тут все устроено', 'расскажите про сервер',
+    'что за сервер', 'новый участник', 'только что зашёл', 'только что присоединился'
+  ];
+
+  // Если найдены ключевые слова новичка, отправляем приветствие
+  if (newbieKeywords.some(keyword => messageContent.includes(keyword))) {
+    const welcomeMessage = `Да конечно расскажу про сервер! 
+1. Много войсов 
+2. Вы можете кинуть нам буст и мы ответим благодарностью!
+3. Постоянно активные новости!
+4. Я колин и Леха ИИ!
+5. Иногда публикуем мемные видосчики)
+6. Есть отзывы, вопроосы и просьбы!
+7. Иногда вы можете получить сообщения от создателя!
+8. Вообще сервер крутой надеюсь вам всем понравится! Мы рады новым участникам сервера❣️`;
+    
+    await message.reply(welcomeMessage);
     return;
   }
 
